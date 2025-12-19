@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- ICONOS (Themify Icons desde CDN fiable) -->
-    <link href="https://cdn.jsdelivr.net/npm/themify-icons@1.0.1/css/themify-icons.css" rel="stylesheet">
+    <!-- ICONOS (RESTALECIDO EL ENLACE ORIGINAL QUE SÍ FUNCIONA) -->
+    <link href="https://cdn.jsdelivr.net/npm/dflip/css/themify-icons.min.css" rel="stylesheet" type="text/css">
 
     <style>
         /* --- VARIABLES --- */
@@ -50,13 +50,13 @@
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 100;
+            z-index: 9999; /* Z-Index muy alto para asegurar visibilidad */
             display: flex;
             align-items: center;
             justify-content: center;
             background: transparent;
             padding: 0;
-            gap: 20px; /* Separación clara */
+            gap: 20px;
         }
 
         /* Estilo Botones */
@@ -73,7 +73,6 @@
             transition: all 0.2s ease;
             padding: 0;
             outline: none;
-            /* Asegurar que estén por encima */
             position: relative; 
             pointer-events: auto;
         }
@@ -82,9 +81,10 @@
         .custom-btn i {
             font-size: 24px; 
             line-height: 1;
+            display: block; /* Asegurar renderizado */
         }
 
-        /* Ajuste óptico icono INFO para igualar peso */
+        /* Ajuste óptico icono INFO */
         #btn-info i { font-size: 20px; }
 
         /* Hover / Active */
@@ -99,7 +99,7 @@
             display: none; 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.98); 
-            z-index: 9999;
+            z-index: 10000; /* Por encima de todo */
             justify-content: center; align-items: center;
             opacity: 0; transition: opacity 0.3s ease;
         }
@@ -141,14 +141,13 @@
                 <strong style="color:white; font-size:15px; letter-spacing:1px;">Joaquin Max Cuevas Ventura</strong><br>
                 2021</p>
                 <div class="modal-note">
-                    Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico con fines pedagógicos y de exhibición de portafolio, exento de cualquier propósito comercial o de lucro.
+                    Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico exento de cualquier propósito comercial o de lucro.
                 </div>
             </div>
         </div>
     </div>
 
     <!-- BARRA DE HERRAMIENTAS -->
-    <!-- Nota: Los IDs se usan en el Script para dar funcionalidad manual -->
     <div id="custom-toolbar">
         <button class="custom-btn" id="btn-zoom-in" title="Acercar"><i class="ti-zoom-in"></i></button>
         <button class="custom-btn" id="btn-zoom-out" title="Alejar"><i class="ti-zoom-out"></i></button>
@@ -193,29 +192,28 @@
             if (event.target == document.getElementById('infoModal')) toggleInfo();
         }
 
-        // 3. INICIAR VISOR
+        // 3. INICIAR VISOR OPENSEADRAGON
         var imageName = "FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.png";
 
         var viewer = OpenSeadragon({
             id: "openseadragon-viewer",
-            prefixUrl: "", // Sin imágenes por defecto
+            prefixUrl: "", // Sin imágenes de iconos por defecto
             
             tileSources: {
                 type: 'image',
                 url:  imageName,
-                buildPyramid: false // Importante para imagenes planas directas
+                buildPyramid: false
             },
 
             // Configuración
-            showNavigationControl: false, // Ocultamos nativos, usamos los nuestros
+            showNavigationControl: false,
             wrapHorizontal: false,
             wrapVertical: false,
             visibilityRatio: 0.5,
             minZoomImageRatio: 0.5,
-            maxZoomPixelRatio: 5,        // Zoom Profundo (x5)
-            defaultZoomLevel: 0,         // Fit to screen
+            maxZoomPixelRatio: 5,        
+            defaultZoomLevel: 0,         
             
-            // Scroll correcto (Nativo OSD)
             gestureSettingsMouse: {
                 clickToZoom: false,
                 scrollToZoom: true
@@ -223,18 +221,18 @@
             animationTime: 0.4
         });
 
-        // 4. VINCULACIÓN MANUAL DE BOTONES (A PRUEBA DE FALLOS)
+        // 4. VINCULACIÓN DE BOTONES
         
         // Zoom +
         document.getElementById('btn-zoom-in').addEventListener('click', function() {
             var currentZoom = viewer.viewport.getZoom();
-            viewer.viewport.zoomTo(currentZoom * 1.5); // Incremento x1.5
+            viewer.viewport.zoomTo(currentZoom * 1.5);
         });
 
         // Zoom -
         document.getElementById('btn-zoom-out').addEventListener('click', function() {
             var currentZoom = viewer.viewport.getZoom();
-            viewer.viewport.zoomTo(currentZoom / 1.5); // Decremento /1.5
+            viewer.viewport.zoomTo(currentZoom / 1.5);
         });
 
         // Fullscreen
