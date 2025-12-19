@@ -1,543 +1,250 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DAVID LYNCH | Infografía</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAVID LYNCH | Infografía</title>
 
-  <!-- Tailwind (requerido) -->
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FUENTES -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- FUENTES -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- ICONOS -->
+    <link href="https://cdn.jsdelivr.net/npm/dflip/css/themify-icons.min.css" rel="stylesheet" type="text/css">
 
-  <!-- ICONOS -->
-  <link href="https://cdn.jsdelivr.net/npm/dflip/css/themify-icons.min.css" rel="stylesheet" type="text/css">
+    <style>
+        /* --- VARIABLES --- */
+        :root {
+            --bg-color: #050505;      
+            --accent-color: #dc6b2f;  
+            --text-main: #FFFFFF;     
+        }
 
-  <style>
-    /* --- VARIABLES --- */
-    :root {
-      --bg-color: #050505;
-      --accent-color: #dc6b2f;
-      --text-main: #FFFFFF;
-    }
+        body, html {
+            height: 100%; margin: 0;
+            background-color: var(--bg-color);
+            font-family: 'Archivo', sans-serif !important;
+            overflow: hidden;
+        }
 
-    body, html {
-      height: 100%;
-      margin: 0;
-      background-color: var(--bg-color);
-      font-family: 'Archivo', sans-serif !important;
-      overflow: hidden;
-    }
+        /* FONDO */
+        #grained-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
 
-    /* FONDO */
-    #grained-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none;
-    }
+        /* VISOR */
+        #openseadragon-viewer {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 10;
+        }
 
-    /* CONTENEDOR PRINCIPAL DEL VISOR */
-    #viewer-container {
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden; /* Ocultamos barras de scroll nativas */
-      position: relative;
-      z-index: 10;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: grab;
-      touch-action: none; /* importante para pan/zoom en touch */
-      user-select: none;
-      -webkit-user-select: none;
-    }
+        /* --- BARRA DE HERRAMIENTAS (AJUSTE FINO STUPOR) --- */
+        #custom-toolbar {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            padding: 0;
+            
+            /* Espaciado idéntico a la referencia Stupor */
+            gap: 25px; 
+        }
 
-    #viewer-container:active {
-      cursor: grabbing;
-    }
+        /* Estilo Botones */
+        .custom-btn {
+            background: transparent;
+            border: none;
+            color: #AAAAAA; /* Gris suave */
+            cursor: pointer;
+            width: auto;  
+            height: 30px; /* Altura fija para alineación vertical */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            outline: none;
+            position: relative; 
+            pointer-events: auto;
+        }
 
-    /* Canvas donde se dibuja el PDF */
-    #pdf-render {
-      box-shadow: 0 0 50px rgba(0,0,0,0.5);
-      display: block;
-      /* Nota: el tamaño visual se define por JS para mantener render HD */
-    }
+        /* TAMAÑO Y ALINEACIÓN DE ICONOS */
+        .custom-btn i {
+            font-size: 20px; /* Tamaño base más fino */
+            line-height: 1;
+            display: block;
+            font-weight: normal;
+        }
 
-    /* Overlay estado (solo visible cargando o error) */
-    #status-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      pointer-events: none;
-      color: #aaa;
-      text-align: center;
-      padding: 24px;
-      background: radial-gradient(circle at center, rgba(0,0,0,0.45), rgba(0,0,0,0));
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-    #status-overlay.show { opacity: 1; }
-    #status-overlay strong { color: #fff; }
+        /* CORRECCIÓN ÓPTICA: El icono 'i' suele verse más grande ópticamente.
+           Lo reducimos ligeramente y lo subimos 1px para centrarlo perfecto con las lupas. */
+        #btn-info i { 
+            font-size: 17px; 
+            position: relative;
+            top: -1px;
+        }
 
-    /* --- BARRA DE HERRAMIENTAS (DISEÑO STUPOR) --- */
-    #custom-toolbar {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent;
-      padding: 0;
-      gap: 25px;
-    }
+        /* Hover */
+        .custom-btn:hover, .custom-btn.active {
+            color: var(--accent-color);
+            transform: scale(1.2);
+            text-shadow: 0 0 15px rgba(220, 107, 47, 0.6);
+        }
 
-    /* Estilo Botones */
-    .custom-btn {
-      background: transparent;
-      border: none;
-      color: #AAAAAA;
-      cursor: pointer;
-      width: auto;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      padding: 0;
-      outline: none;
-      position: relative;
-      pointer-events: auto;
-    }
+        /* --- MODAL INFO --- */
+        .modal-overlay {
+            display: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.98); 
+            z-index: 10000; 
+            justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
 
-    .custom-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none !important;
-      text-shadow: none !important;
-    }
+        .modal-content {
+            color: #fff; max-width: 500px; width: 80%;
+            text-align: center; position: relative;
+        }
+        .modal-line { width: 40px; height: 2px; background-color: var(--accent-color); margin: 20px auto; }
+        .modal-title { font-size: 24px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 3px; }
+        .modal-subtitle { font-size: 11px; color: var(--accent-color); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+        .modal-body { font-size: 14px; color: #ccc; line-height: 1.6; font-weight: 300; }
+        .modal-note { margin-top: 30px; font-size: 10px; color: #666; border-top: 1px solid #222; padding-top: 15px; }
+        
+        .close-modal { 
+            position: absolute; top: -50px; right: 0; 
+            color: #666; font-size: 30px; cursor: pointer; 
+            transition: 0.2s; font-weight: 100; font-family: sans-serif;
+        }
+        .close-modal:hover { color: var(--accent-color); }
 
-    /* Iconos */
-    .custom-btn i {
-      font-size: 20px;
-      line-height: 1;
-      display: block;
-      font-weight: normal;
-    }
-
-    /* Ajuste óptico icono INFO */
-    #btn-info i {
-      font-size: 17px;
-      position: relative;
-      top: -1px;
-    }
-
-    /* Hover */
-    .custom-btn:hover, .custom-btn.active {
-      color: var(--accent-color);
-      transform: scale(1.2);
-      text-shadow: 0 0 15px rgba(220, 107, 47, 0.6);
-    }
-
-    /* --- MODAL INFO --- */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.98);
-      z-index: 10000;
-      justify-content: center;
-      align-items: center;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    .modal-overlay.show { display: flex; opacity: 1; }
-
-    .modal-content {
-      color: #fff;
-      max-width: 500px;
-      width: 80%;
-      text-align: center;
-      position: relative;
-    }
-    .modal-line {
-      width: 40px;
-      height: 2px;
-      background-color: var(--accent-color);
-      margin: 20px auto;
-    }
-    .modal-title {
-      font-size: 24px;
-      font-weight: 800;
-      margin-bottom: 5px;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-    }
-    .modal-subtitle {
-      font-size: 11px;
-      color: var(--accent-color);
-      margin-bottom: 30px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 600;
-    }
-    .modal-body {
-      font-size: 14px;
-      color: #ccc;
-      line-height: 1.6;
-      font-weight: 300;
-    }
-    .modal-note {
-      margin-top: 30px;
-      font-size: 10px;
-      color: #666;
-      border-top: 1px solid #222;
-      padding-top: 15px;
-    }
-
-    .close-modal {
-      position: absolute;
-      top: -50px;
-      right: 0;
-      color: #666;
-      font-size: 30px;
-      cursor: pointer;
-      transition: 0.2s;
-      font-weight: 100;
-      font-family: sans-serif;
-    }
-    .close-modal:hover { color: var(--accent-color); }
-
-    /* Reduce motion */
-    @media (prefers-reduced-motion: reduce) {
-      #status-overlay { transition: none; }
-      .custom-btn { transition: none; }
-      .modal-overlay { transition: none; }
-    }
-  </style>
+    </style>
 </head>
 <body>
-  <!-- FONDO -->
-  <div id="grained-container"></div>
 
-  <!-- MODAL INFO -->
-  <div id="infoModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Información">
-    <div class="modal-content">
-      <span class="close-modal" id="closeModal" aria-label="Cerrar">✕</span>
-      <div class="modal-title">DAVID LYNCH</div>
-      <div class="modal-subtitle">DECODIFICACIÓN FÍLMICA [INFOGRAFÍA]</div>
-      <div class="modal-line"></div>
-      <div class="modal-body">
-        <p>
-          INVESTIGACIÓN, REDACCIÓN E ILUSTRACIÓN<br>
-          <strong style="color:white; font-size:15px; letter-spacing:1px;">Joaquin Max Cuevas Ventura</strong><br>
-          2021
-        </p>
-        <div class="modal-note">
-          Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico con fines pedagógicos y de exhibición de portafolio, exento de cualquier propósito comercial o de lucro.
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- FONDO -->
+    <div id="grained-container"></div>
 
-  <!-- BARRA DE HERRAMIENTAS -->
-  <div id="custom-toolbar">
-    <button class="custom-btn" id="btn-zoom-in" title="Acercar" aria-label="Acercar" disabled><i class="ti-zoom-in"></i></button>
-    <button class="custom-btn" id="btn-zoom-out" title="Alejar" aria-label="Alejar" disabled><i class="ti-zoom-out"></i></button>
-    <button class="custom-btn" id="btn-full" title="Pantalla Completa" aria-label="Pantalla Completa"><i class="ti-fullscreen"></i></button>
-    <button class="custom-btn" id="btn-info" title="Información" aria-label="Información"><i class="ti-info-alt"></i></button>
-  </div>
-
-  <!-- CONTENEDOR DEL PDF -->
-  <div id="viewer-container">
-    <div id="status-overlay" class="show">
-      <div class="max-w-xl">
-        <div class="text-sm tracking-wide">Cargando infografía…</div>
-        <div class="text-[11px] mt-2 text-[#666]">Si no carga, asegúrate de que el PDF exista en la misma carpeta con el nombre exacto.</div>
-      </div>
-    </div>
-    <canvas id="pdf-render"></canvas>
-  </div>
-
-  <!-- LIBRERÍAS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/grained/0.0.2/grained.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
-
-  <script>
-    (function () {
-      'use strict';
-
-      // ====== CONFIG ======
-      const PDF_URL = 'FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.pdf';
-
-      // PDF.js Worker
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-
-      // ====== DOM ======
-      const container = document.getElementById('viewer-container');
-      const canvas = document.getElementById('pdf-render');
-      const ctx = canvas.getContext('2d', { alpha: false });
-
-      const statusOverlay = document.getElementById('status-overlay');
-
-      const btnZoomIn = document.getElementById('btn-zoom-in');
-      const btnZoomOut = document.getElementById('btn-zoom-out');
-      const btnFull = document.getElementById('btn-full');
-      const btnInfo = document.getElementById('btn-info');
-
-      const infoModal = document.getElementById('infoModal');
-      const closeModal = document.getElementById('closeModal');
-
-      // ====== ESTADO ======
-      let panzoomInstance = null;
-      let currentPdf = null;
-      let currentPage = null;
-      let baseViewport = null; // viewport a escala 1 para sizing visual
-
-      // ====== UTIL ======
-      function setStatus({ visible, html } = {}) {
-        if (typeof html === 'string') statusOverlay.innerHTML = html;
-        statusOverlay.classList.toggle('show', !!visible);
-      }
-
-      function clamp(n, min, max) {
-        return Math.min(max, Math.max(min, n));
-      }
-
-      function computeFitScale() {
-        if (!baseViewport) return 1;
-        const cw = container.clientWidth;
-        const ch = container.clientHeight;
-        const scale = Math.min(cw / baseViewport.width, ch / baseViewport.height);
-        return clamp(scale * 0.95, 0.05, 6);
-      }
-
-      function enableZoomButtons(enabled) {
-        btnZoomIn.disabled = !enabled;
-        btnZoomOut.disabled = !enabled;
-      }
-
-      // ====== MODAL ======
-      function openInfo() {
-        infoModal.style.display = 'flex';
-        // for transition
-        requestAnimationFrame(() => {
-          infoModal.classList.add('show');
-          infoModal.setAttribute('aria-hidden', 'false');
-          btnInfo.classList.add('active');
-        });
-      }
-
-      function closeInfo() {
-        infoModal.classList.remove('show');
-        infoModal.setAttribute('aria-hidden', 'true');
-        btnInfo.classList.remove('active');
-        setTimeout(() => { infoModal.style.display = 'none'; }, 300);
-      }
-
-      function toggleInfo() {
-        const isOpen = infoModal.classList.contains('show');
-        if (isOpen) closeInfo(); else openInfo();
-      }
-
-      btnInfo.addEventListener('click', toggleInfo);
-      closeModal.addEventListener('click', closeInfo);
-      infoModal.addEventListener('click', (e) => {
-        if (e.target === infoModal) closeInfo();
-      });
-
-      // Escape cierra modal
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && infoModal.classList.contains('show')) {
-          closeInfo();
-        }
-      });
-
-      // ====== FULLSCREEN ======
-      async function toggleFullscreen() {
-        try {
-          if (!document.fullscreenElement) {
-            await container.requestFullscreen();
-          } else {
-            await document.exitFullscreen();
-          }
-        } catch (err) {
-          // Silencioso: algunos navegadores bloquean fullscreen si no es por gesto
-          console.warn('Fullscreen no disponible:', err);
-        }
-      }
-      btnFull.addEventListener('click', toggleFullscreen);
-
-      // ====== GRAIN (respetando reduced motion) ======
-      try {
-        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!reduceMotion) {
-          grained('#grained-container', {
-            animate: true,
-            patternWidth: 100,
-            patternHeight: 100,
-            grainOpacity: 0.05,
-            grainDensity: 1,
-            grainWidth: 1,
-            grainHeight: 1
-          });
-        }
-      } catch (e) {
-        console.log('Error cargando grano');
-      }
-
-      // ====== PDF RENDER ======
-      async function loadPdf(url) {
-        setStatus({
-          visible: true,
-          html: `
-            <div class="max-w-xl">
-              <div class="text-sm tracking-wide">Cargando infografía…</div>
-              <div class="text-[11px] mt-2 text-[#666]">Si no carga, asegúrate de que el PDF exista en la misma carpeta con el nombre exacto.</div>
+    <!-- MODAL INFO -->
+    <div id="infoModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="toggleInfo()">✕</span>
+            <div class="modal-title">DAVID LYNCH</div>
+            <div class="modal-subtitle">DECODIFICACIÓN FÍLMICA [INFOGRAFÍA]</div>
+            <div class="modal-line"></div>
+            <div class="modal-body">
+                <p>INVESTIGACIÓN, REDACCIÓN E ILUSTRACIÓN<br>
+                <strong style="color:white; font-size:15px; letter-spacing:1px;">Joaquin Max Cuevas Ventura</strong><br>
+                2021</p>
+                <div class="modal-note">
+                    Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico exento de cualquier propósito comercial o de lucro.
+                </div>
             </div>
-          `
-        });
-        enableZoomButtons(false);
+        </div>
+    </div>
 
+    <!-- BARRA DE HERRAMIENTAS -->
+    <div id="custom-toolbar">
+        <button class="custom-btn" id="btn-zoom-in" title="Acercar"><i class="ti-zoom-in"></i></button>
+        <button class="custom-btn" id="btn-zoom-out" title="Alejar"><i class="ti-zoom-out"></i></button>
+        <button class="custom-btn" id="btn-full" title="Pantalla Completa"><i class="ti-fullscreen"></i></button>
+        <button class="custom-btn" id="btn-info" title="Información"><i class="ti-info-alt"></i></button>
+    </div>
+
+    <!-- VISOR -->
+    <div id="openseadragon-viewer"></div>
+
+    <!-- SCRIPTS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/grained/0.0.2/grained.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script>
+
+    <script>
+        // 1. GRANULADO
         try {
-          const loadingTask = pdfjsLib.getDocument({ url });
-          currentPdf = await loadingTask.promise;
-          currentPage = await currentPdf.getPage(1);
+            grained('#grained-container', {
+                "animate": true, "patternWidth": 100, "patternHeight": 100,
+                "grainOpacity": 0.05, "grainDensity": 1, "grainWidth": 1, "grainHeight": 1
+            });
+        } catch(e) { console.log("Error cargando grano"); }
 
-          // Viewport base (escala 1) para tamaño visual del canvas
-          baseViewport = currentPage.getViewport({ scale: 1 });
-
-          // Render en alta densidad, pero manteniendo el tamaño CSS según baseViewport.
-          // Se limita el total de pixeles para evitar canvases gigantes.
-          const dpr = window.devicePixelRatio || 1;
-          const desiredMultiplier = 2; // calidad al hacer zoom
-          let renderScale = dpr * desiredMultiplier;
-
-          const maxPixels = 40_000_000; // límite práctico (~160MB RGBA). Ajustable.
-          const basePixels = baseViewport.width * baseViewport.height;
-          if (basePixels * renderScale * renderScale > maxPixels) {
-            renderScale = Math.sqrt(maxPixels / basePixels);
-          }
-          renderScale = clamp(renderScale, 1, 4);
-
-          const renderViewport = currentPage.getViewport({ scale: renderScale });
-
-          canvas.width = Math.floor(renderViewport.width);
-          canvas.height = Math.floor(renderViewport.height);
-          canvas.style.width = `${Math.floor(baseViewport.width)}px`;
-          canvas.style.height = `${Math.floor(baseViewport.height)}px`;
-
-          // Fondo sólido para evitar composición costosa en algunos browsers
-          ctx.save();
-          ctx.fillStyle = '#000';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.restore();
-
-          const renderTask = currentPage.render({ canvasContext: ctx, viewport: renderViewport });
-          await renderTask.promise;
-
-          setStatus({ visible: false });
-          initPanzoom();
-          enableZoomButtons(true);
-        } catch (err) {
-          console.error('Error cargando PDF:', err);
-          setStatus({
-            visible: true,
-            html: `
-              <div class="max-w-xl">
-                <div class="text-sm tracking-wide"><strong>No se pudo cargar el PDF.</strong></div>
-                <div class="text-[12px] mt-2 text-[#aaa]">Verifica que el archivo exista con este nombre exacto:</div>
-                <div class="text-[12px] mt-2 text-white/90 break-all">${PDF_URL}</div>
-                <div class="text-[11px] mt-4 text-[#666]">También revisa la consola del navegador para más detalles.</div>
-              </div>
-            `
-          });
-          enableZoomButtons(false);
-        }
-      }
-
-      function initPanzoom() {
-        // Destruye instancia previa si recargara
-        if (panzoomInstance && panzoomInstance.destroy) {
-          try { panzoomInstance.destroy(); } catch (_) {}
-        }
-
-        const startScale = computeFitScale();
-
-        panzoomInstance = Panzoom(canvas, {
-          maxScale: 6,
-          minScale: 0.05,
-          startScale,
-          contain: 'outside',
-          cursor: 'grab'
-        });
-
-        // Rueda mouse
-        container.addEventListener('wheel', panzoomInstance.zoomWithWheel, { passive: false });
-
-        // Botones
-        btnZoomIn.addEventListener('click', () => panzoomInstance && panzoomInstance.zoomIn());
-        btnZoomOut.addEventListener('click', () => panzoomInstance && panzoomInstance.zoomOut());
-
-        // Atajos (no cambian UI; sólo mejora usabilidad)
-        window.addEventListener('keydown', (e) => {
-          if (!panzoomInstance) return;
-          if (infoModal.classList.contains('show')) return; // evita atajos mientras modal está abierto
-
-          if (e.key === '+' || (e.key === '=' && (e.ctrlKey || e.metaKey))) {
-            e.preventDefault();
-            panzoomInstance.zoomIn();
-          } else if (e.key === '-' || (e.key === '_' && (e.ctrlKey || e.metaKey))) {
-            e.preventDefault();
-            panzoomInstance.zoomOut();
-          } else if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
-            e.preventDefault();
-            panzoomInstance.zoom(startScale, { animate: true });
-            panzoomInstance.pan(0, 0, { animate: true });
-          } else if (e.key.toLowerCase() === 'f') {
-            // fullscreen
-            toggleFullscreen();
-          } else if (e.key.toLowerCase() === 'i') {
-            toggleInfo();
-          }
-        }, { passive: false });
-
-        // Re-ajuste en resize: recalcula un "fit" y aplica suavemente.
-        let resizeRaf = null;
-        window.addEventListener('resize', () => {
-          if (!panzoomInstance) return;
-          if (resizeRaf) cancelAnimationFrame(resizeRaf);
-          resizeRaf = requestAnimationFrame(() => {
-            const fit = computeFitScale();
-            // No forzamos reset total para respetar la posición del usuario.
-            // Sólo aseguramos que el zoom mínimo no quede fuera de rango.
-            const state = panzoomInstance.getState();
-            if (state && typeof state.scale === 'number' && state.scale < fit * 0.6) {
-              panzoomInstance.zoom(fit, { animate: true });
+        // 2. LÓGICA MODAL
+        function toggleInfo() {
+            var modal = document.getElementById('infoModal');
+            var btn = document.getElementById('btn-info');
+            
+            if (modal.classList.contains('show')) {
+                modal.classList.remove('show');
+                setTimeout(function() { modal.style.display = 'none'; }, 300); 
+                btn.classList.remove('active');
+            } else {
+                modal.style.display = 'flex';
+                setTimeout(function() { modal.classList.add('show'); }, 10);
+                btn.classList.add('active');
             }
-          });
-        });
-      }
+        }
+        document.getElementById('btn-info').onclick = toggleInfo;
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('infoModal')) toggleInfo();
+        }
 
-      // ====== INICIO ======
-      loadPdf(PDF_URL);
-    })();
-  </script>
+        // 3. INICIAR VISOR OPENSEADRAGON
+        var imageName = "FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.png";
+
+        var viewer = OpenSeadragon({
+            id: "openseadragon-viewer",
+            prefixUrl: "", 
+            
+            tileSources: {
+                type: 'image',
+                url:  imageName,
+                buildPyramid: false
+            },
+
+            // Configuración
+            showNavigationControl: false,
+            wrapHorizontal: false,
+            wrapVertical: false,
+            visibilityRatio: 0.5,
+            minZoomImageRatio: 0.5,
+            maxZoomPixelRatio: 5,        
+            defaultZoomLevel: 0,         
+            
+            gestureSettingsMouse: {
+                clickToZoom: false,
+                scrollToZoom: true
+            },
+            animationTime: 0.4
+        });
+
+        // 4. VINCULACIÓN DE BOTONES
+        document.getElementById('btn-zoom-in').addEventListener('click', function() {
+            var currentZoom = viewer.viewport.getZoom();
+            viewer.viewport.zoomTo(currentZoom * 1.5);
+        });
+
+        document.getElementById('btn-zoom-out').addEventListener('click', function() {
+            var currentZoom = viewer.viewport.getZoom();
+            viewer.viewport.zoomTo(currentZoom / 1.5);
+        });
+
+        document.getElementById('btn-full').addEventListener('click', function() {
+            viewer.setFullScreen(!viewer.isFullScreen());
+        });
+
+    </script>
+
 </body>
 </html>
