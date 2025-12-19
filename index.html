@@ -1,656 +1,543 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DAVID LYNCH | Infografía</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DAVID LYNCH | Infografía</title>
 
-    <!-- FUENTES -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind (requerido) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
-    <!-- ICONOS -->
-    <link href="https://cdn.jsdelivr.net/npm/dflip/css/themify-icons.min.css" rel="stylesheet" type="text/css">
+  <!-- FUENTES -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <style>
-        /* --- VARIABLES --- */
-        :root {
-            --bg-color: #050505;      
-            --accent-color: #dc6b2f;  
-            --text-main: #FFFFFF;     
-        }
+  <!-- ICONOS -->
+  <link href="https://cdn.jsdelivr.net/npm/dflip/css/themify-icons.min.css" rel="stylesheet" type="text/css">
 
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
+  <style>
+    /* --- VARIABLES --- */
+    :root {
+      --bg-color: #050505;
+      --accent-color: #dc6b2f;
+      --text-main: #FFFFFF;
+    }
 
-        body, html {
-            height: 100%; 
-            margin: 0;
-            background-color: var(--bg-color);
-            font-family: 'Archivo', sans-serif;
-            overflow: hidden;
-        }
+    body, html {
+      height: 100%;
+      margin: 0;
+      background-color: var(--bg-color);
+      font-family: 'Archivo', sans-serif !important;
+      overflow: hidden;
+    }
 
-        /* FONDO GRANULADO */
-        #grained-container {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            z-index: 0; 
-            pointer-events: none;
-        }
+    /* FONDO */
+    #grained-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
 
-        /* CONTENEDOR PRINCIPAL DEL VISOR */
-        #viewer-container {
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: grab;
-        }
-        
-        #viewer-container:active {
-            cursor: grabbing;
-        }
+    /* CONTENEDOR PRINCIPAL DEL VISOR */
+    #viewer-container {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden; /* Ocultamos barras de scroll nativas */
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: grab;
+      touch-action: none; /* importante para pan/zoom en touch */
+      user-select: none;
+      -webkit-user-select: none;
+    }
 
-        /* Canvas del PDF */
-        #pdf-render {
-            max-width: 90%;
-            height: auto;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            display: none; /* Oculto hasta que cargue */
-        }
+    #viewer-container:active {
+      cursor: grabbing;
+    }
 
-        #pdf-render.loaded {
-            display: block;
-        }
+    /* Canvas donde se dibuja el PDF */
+    #pdf-render {
+      box-shadow: 0 0 50px rgba(0,0,0,0.5);
+      display: block;
+      /* Nota: el tamaño visual se define por JS para mantener render HD */
+    }
 
-        /* --- LOADER --- */
-        #loader {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 100;
-            text-align: center;
-            color: var(--text-main);
-        }
+    /* Overlay estado (solo visible cargando o error) */
+    #status-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      pointer-events: none;
+      color: #aaa;
+      text-align: center;
+      padding: 24px;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.45), rgba(0,0,0,0));
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    #status-overlay.show { opacity: 1; }
+    #status-overlay strong { color: #fff; }
 
-        #loader.hidden {
-            display: none;
-        }
+    /* --- BARRA DE HERRAMIENTAS (DISEÑO STUPOR) --- */
+    #custom-toolbar {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      padding: 0;
+      gap: 25px;
+    }
 
-        .loader-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: var(--accent-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
+    /* Estilo Botones */
+    .custom-btn {
+      background: transparent;
+      border: none;
+      color: #AAAAAA;
+      cursor: pointer;
+      width: auto;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      padding: 0;
+      outline: none;
+      position: relative;
+      pointer-events: auto;
+    }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+    .custom-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+      text-shadow: none !important;
+    }
 
-        .loader-text {
-            font-size: 12px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            opacity: 0.7;
-        }
+    /* Iconos */
+    .custom-btn i {
+      font-size: 20px;
+      line-height: 1;
+      display: block;
+      font-weight: normal;
+    }
 
-        /* --- ERROR MESSAGE --- */
-        #error-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 100;
-            text-align: center;
-            color: var(--text-main);
-            max-width: 400px;
-            padding: 30px;
-            display: none;
-        }
+    /* Ajuste óptico icono INFO */
+    #btn-info i {
+      font-size: 17px;
+      position: relative;
+      top: -1px;
+    }
 
-        #error-message.show {
-            display: block;
-        }
+    /* Hover */
+    .custom-btn:hover, .custom-btn.active {
+      color: var(--accent-color);
+      transform: scale(1.2);
+      text-shadow: 0 0 15px rgba(220, 107, 47, 0.6);
+    }
 
-        .error-icon {
-            font-size: 48px;
-            color: var(--accent-color);
-            margin-bottom: 20px;
-        }
+    /* --- MODAL INFO --- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.98);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.show { display: flex; opacity: 1; }
 
-        .error-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
+    .modal-content {
+      color: #fff;
+      max-width: 500px;
+      width: 80%;
+      text-align: center;
+      position: relative;
+    }
+    .modal-line {
+      width: 40px;
+      height: 2px;
+      background-color: var(--accent-color);
+      margin: 20px auto;
+    }
+    .modal-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+    .modal-subtitle {
+      font-size: 11px;
+      color: var(--accent-color);
+      margin-bottom: 30px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+    }
+    .modal-body {
+      font-size: 14px;
+      color: #ccc;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+    .modal-note {
+      margin-top: 30px;
+      font-size: 10px;
+      color: #666;
+      border-top: 1px solid #222;
+      padding-top: 15px;
+    }
 
-        .error-desc {
-            font-size: 13px;
-            color: #888;
-            line-height: 1.6;
-        }
+    .close-modal {
+      position: absolute;
+      top: -50px;
+      right: 0;
+      color: #666;
+      font-size: 30px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: 100;
+      font-family: sans-serif;
+    }
+    .close-modal:hover { color: var(--accent-color); }
 
-        /* --- BARRA DE HERRAMIENTAS --- */
-        #custom-toolbar {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            padding: 0;
-            gap: 25px; 
-        }
-
-        /* Botones */
-        .custom-btn {
-            background: transparent;
-            border: none;
-            color: #AAAAAA;
-            cursor: pointer;
-            width: auto;  
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;
-            padding: 0;
-            outline: none;
-            position: relative; 
-            pointer-events: auto;
-        }
-
-        .custom-btn:focus-visible {
-            outline: 2px solid var(--accent-color);
-            outline-offset: 4px;
-        }
-
-        /* Iconos */
-        .custom-btn i {
-            font-size: 20px; 
-            line-height: 1;
-            display: block;
-            font-weight: normal;
-        }
-
-        /* Ajuste óptico icono INFO */
-        #btn-info i { 
-            font-size: 17px; 
-            position: relative;
-            top: -1px;
-        }
-
-        /* Hover y Active */
-        .custom-btn:hover, 
-        .custom-btn.active {
-            color: var(--accent-color);
-            transform: scale(1.2);
-            text-shadow: 0 0 15px rgba(220, 107, 47, 0.6);
-        }
-
-        /* --- MODAL INFO --- */
-        .modal-overlay {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0, 0, 0, 0.98); 
-            z-index: 10000; 
-            display: flex;
-            justify-content: center; 
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        .modal-overlay.show { 
-            opacity: 1; 
-            visibility: visible;
-        }
-
-        .modal-content {
-            color: #fff; 
-            max-width: 500px; 
-            width: 80%;
-            text-align: center; 
-            position: relative;
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.show .modal-content {
-            transform: translateY(0);
-        }
-
-        .modal-line { 
-            width: 40px; 
-            height: 2px; 
-            background-color: var(--accent-color); 
-            margin: 20px auto; 
-        }
-
-        .modal-title { 
-            font-size: 24px; 
-            font-weight: 800; 
-            margin-bottom: 5px; 
-            text-transform: uppercase; 
-            letter-spacing: 3px; 
-        }
-
-        .modal-subtitle { 
-            font-size: 11px; 
-            color: var(--accent-color); 
-            margin-bottom: 30px; 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-            font-weight: 600; 
-        }
-
-        .modal-body { 
-            font-size: 14px; 
-            color: #ccc; 
-            line-height: 1.6; 
-            font-weight: 300; 
-        }
-
-        .modal-body p {
-            margin: 0;
-        }
-
-        .modal-note { 
-            margin-top: 30px; 
-            font-size: 10px; 
-            color: #666; 
-            border-top: 1px solid #222; 
-            padding-top: 15px; 
-        }
-        
-        .close-modal { 
-            position: absolute; 
-            top: -50px; 
-            right: 0; 
-            color: #666; 
-            font-size: 30px; 
-            cursor: pointer; 
-            transition: color 0.2s ease;
-            font-weight: 100; 
-            font-family: sans-serif;
-            background: none;
-            border: none;
-            padding: 5px;
-            line-height: 1;
-        }
-
-        .close-modal:hover,
-        .close-modal:focus {
-            color: var(--accent-color);
-            outline: none;
-        }
-    </style>
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+      #status-overlay { transition: none; }
+      .custom-btn { transition: none; }
+      .modal-overlay { transition: none; }
+    }
+  </style>
 </head>
 <body>
+  <!-- FONDO -->
+  <div id="grained-container"></div>
 
-    <!-- FONDO GRANULADO -->
-    <div id="grained-container"></div>
-
-    <!-- LOADER -->
-    <div id="loader">
-        <div class="loader-spinner"></div>
-        <div class="loader-text">Cargando infografía...</div>
-    </div>
-
-    <!-- ERROR MESSAGE -->
-    <div id="error-message">
-        <div class="error-icon">⚠</div>
-        <div class="error-title">No se pudo cargar el PDF</div>
-        <div class="error-desc">
-            Verifica que el archivo PDF existe y que la ruta es correcta. 
-            También asegúrate de que estás ejecutando esto desde un servidor web.
+  <!-- MODAL INFO -->
+  <div id="infoModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Información">
+    <div class="modal-content">
+      <span class="close-modal" id="closeModal" aria-label="Cerrar">✕</span>
+      <div class="modal-title">DAVID LYNCH</div>
+      <div class="modal-subtitle">DECODIFICACIÓN FÍLMICA [INFOGRAFÍA]</div>
+      <div class="modal-line"></div>
+      <div class="modal-body">
+        <p>
+          INVESTIGACIÓN, REDACCIÓN E ILUSTRACIÓN<br>
+          <strong style="color:white; font-size:15px; letter-spacing:1px;">Joaquin Max Cuevas Ventura</strong><br>
+          2021
+        </p>
+        <div class="modal-note">
+          Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico con fines pedagógicos y de exhibición de portafolio, exento de cualquier propósito comercial o de lucro.
         </div>
+      </div>
     </div>
+  </div>
 
-    <!-- MODAL INFO -->
-    <div id="infoModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="modal-content">
-            <button class="close-modal" id="close-modal-btn" aria-label="Cerrar">✕</button>
-            <h1 class="modal-title" id="modal-title">DAVID LYNCH</h1>
-            <div class="modal-subtitle">DECODIFICACIÓN FÍLMICA [INFOGRAFÍA]</div>
-            <div class="modal-line"></div>
-            <div class="modal-body">
-                <p>INVESTIGACIÓN, REDACCIÓN E ILUSTRACIÓN<br>
-                <strong style="color:white; font-size:15px; letter-spacing:1px;">Joaquin Max Cuevas Ventura</strong><br>
-                2021</p>
-                <div class="modal-note">
-                    Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico con fines pedagógicos y de exhibición de portafolio, exento de cualquier propósito comercial o de lucro.
-                </div>
+  <!-- BARRA DE HERRAMIENTAS -->
+  <div id="custom-toolbar">
+    <button class="custom-btn" id="btn-zoom-in" title="Acercar" aria-label="Acercar" disabled><i class="ti-zoom-in"></i></button>
+    <button class="custom-btn" id="btn-zoom-out" title="Alejar" aria-label="Alejar" disabled><i class="ti-zoom-out"></i></button>
+    <button class="custom-btn" id="btn-full" title="Pantalla Completa" aria-label="Pantalla Completa"><i class="ti-fullscreen"></i></button>
+    <button class="custom-btn" id="btn-info" title="Información" aria-label="Información"><i class="ti-info-alt"></i></button>
+  </div>
+
+  <!-- CONTENEDOR DEL PDF -->
+  <div id="viewer-container">
+    <div id="status-overlay" class="show">
+      <div class="max-w-xl">
+        <div class="text-sm tracking-wide">Cargando infografía…</div>
+        <div class="text-[11px] mt-2 text-[#666]">Si no carga, asegúrate de que el PDF exista en la misma carpeta con el nombre exacto.</div>
+      </div>
+    </div>
+    <canvas id="pdf-render"></canvas>
+  </div>
+
+  <!-- LIBRERÍAS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/grained/0.0.2/grained.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ====== CONFIG ======
+      const PDF_URL = 'FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.pdf';
+
+      // PDF.js Worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+      // ====== DOM ======
+      const container = document.getElementById('viewer-container');
+      const canvas = document.getElementById('pdf-render');
+      const ctx = canvas.getContext('2d', { alpha: false });
+
+      const statusOverlay = document.getElementById('status-overlay');
+
+      const btnZoomIn = document.getElementById('btn-zoom-in');
+      const btnZoomOut = document.getElementById('btn-zoom-out');
+      const btnFull = document.getElementById('btn-full');
+      const btnInfo = document.getElementById('btn-info');
+
+      const infoModal = document.getElementById('infoModal');
+      const closeModal = document.getElementById('closeModal');
+
+      // ====== ESTADO ======
+      let panzoomInstance = null;
+      let currentPdf = null;
+      let currentPage = null;
+      let baseViewport = null; // viewport a escala 1 para sizing visual
+
+      // ====== UTIL ======
+      function setStatus({ visible, html } = {}) {
+        if (typeof html === 'string') statusOverlay.innerHTML = html;
+        statusOverlay.classList.toggle('show', !!visible);
+      }
+
+      function clamp(n, min, max) {
+        return Math.min(max, Math.max(min, n));
+      }
+
+      function computeFitScale() {
+        if (!baseViewport) return 1;
+        const cw = container.clientWidth;
+        const ch = container.clientHeight;
+        const scale = Math.min(cw / baseViewport.width, ch / baseViewport.height);
+        return clamp(scale * 0.95, 0.05, 6);
+      }
+
+      function enableZoomButtons(enabled) {
+        btnZoomIn.disabled = !enabled;
+        btnZoomOut.disabled = !enabled;
+      }
+
+      // ====== MODAL ======
+      function openInfo() {
+        infoModal.style.display = 'flex';
+        // for transition
+        requestAnimationFrame(() => {
+          infoModal.classList.add('show');
+          infoModal.setAttribute('aria-hidden', 'false');
+          btnInfo.classList.add('active');
+        });
+      }
+
+      function closeInfo() {
+        infoModal.classList.remove('show');
+        infoModal.setAttribute('aria-hidden', 'true');
+        btnInfo.classList.remove('active');
+        setTimeout(() => { infoModal.style.display = 'none'; }, 300);
+      }
+
+      function toggleInfo() {
+        const isOpen = infoModal.classList.contains('show');
+        if (isOpen) closeInfo(); else openInfo();
+      }
+
+      btnInfo.addEventListener('click', toggleInfo);
+      closeModal.addEventListener('click', closeInfo);
+      infoModal.addEventListener('click', (e) => {
+        if (e.target === infoModal) closeInfo();
+      });
+
+      // Escape cierra modal
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && infoModal.classList.contains('show')) {
+          closeInfo();
+        }
+      });
+
+      // ====== FULLSCREEN ======
+      async function toggleFullscreen() {
+        try {
+          if (!document.fullscreenElement) {
+            await container.requestFullscreen();
+          } else {
+            await document.exitFullscreen();
+          }
+        } catch (err) {
+          // Silencioso: algunos navegadores bloquean fullscreen si no es por gesto
+          console.warn('Fullscreen no disponible:', err);
+        }
+      }
+      btnFull.addEventListener('click', toggleFullscreen);
+
+      // ====== GRAIN (respetando reduced motion) ======
+      try {
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!reduceMotion) {
+          grained('#grained-container', {
+            animate: true,
+            patternWidth: 100,
+            patternHeight: 100,
+            grainOpacity: 0.05,
+            grainDensity: 1,
+            grainWidth: 1,
+            grainHeight: 1
+          });
+        }
+      } catch (e) {
+        console.log('Error cargando grano');
+      }
+
+      // ====== PDF RENDER ======
+      async function loadPdf(url) {
+        setStatus({
+          visible: true,
+          html: `
+            <div class="max-w-xl">
+              <div class="text-sm tracking-wide">Cargando infografía…</div>
+              <div class="text-[11px] mt-2 text-[#666]">Si no carga, asegúrate de que el PDF exista en la misma carpeta con el nombre exacto.</div>
             </div>
-        </div>
-    </div>
+          `
+        });
+        enableZoomButtons(false);
 
-    <!-- BARRA DE HERRAMIENTAS -->
-    <div id="custom-toolbar">
-        <button class="custom-btn" id="btn-zoom-in" title="Acercar" aria-label="Acercar"><i class="ti-zoom-in"></i></button>
-        <button class="custom-btn" id="btn-zoom-out" title="Alejar" aria-label="Alejar"><i class="ti-zoom-out"></i></button>
-        <button class="custom-btn" id="btn-full" title="Pantalla Completa" aria-label="Pantalla Completa"><i class="ti-fullscreen"></i></button>
-        <button class="custom-btn" id="btn-info" title="Información" aria-label="Información"><i class="ti-info-alt"></i></button>
-    </div>
+        try {
+          const loadingTask = pdfjsLib.getDocument({ url });
+          currentPdf = await loadingTask.promise;
+          currentPage = await currentPdf.getPage(1);
 
-    <!-- CONTENEDOR DEL PDF -->
-    <div id="viewer-container">
-        <canvas id="pdf-render"></canvas>
-    </div>
+          // Viewport base (escala 1) para tamaño visual del canvas
+          baseViewport = currentPage.getViewport({ scale: 1 });
 
-    <!-- SCRIPTS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/grained/0.0.2/grained.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+          // Render en alta densidad, pero manteniendo el tamaño CSS según baseViewport.
+          // Se limita el total de pixeles para evitar canvases gigantes.
+          const dpr = window.devicePixelRatio || 1;
+          const desiredMultiplier = 2; // calidad al hacer zoom
+          let renderScale = dpr * desiredMultiplier;
 
-    <script>
-        (function() {
-            'use strict';
+          const maxPixels = 40_000_000; // límite práctico (~160MB RGBA). Ajustable.
+          const basePixels = baseViewport.width * baseViewport.height;
+          if (basePixels * renderScale * renderScale > maxPixels) {
+            renderScale = Math.sqrt(maxPixels / basePixels);
+          }
+          renderScale = clamp(renderScale, 1, 4);
 
-            // ==========================================
-            // CONFIGURACIÓN
-            // ==========================================
-            const CONFIG = {
-                pdfUrl: 'FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.pdf',
-                pdfWorkerUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js',
-                pdfRenderScale: 2.5,
-                panzoom: {
-                    maxScale: 6,
-                    minScale: 0.1,
-                    startScale: 0.4,
-                    contain: 'outside',
-                    cursor: 'grab'
-                },
-                grained: {
-                    animate: true,
-                    patternWidth: 100,
-                    patternHeight: 100,
-                    grainOpacity: 0.05,
-                    grainDensity: 1,
-                    grainWidth: 1,
-                    grainHeight: 1
-                }
-            };
+          const renderViewport = currentPage.getViewport({ scale: renderScale });
 
-            // ==========================================
-            // ELEMENTOS DOM (cacheados)
-            // ==========================================
-            const DOM = {
-                grainedContainer: document.getElementById('grained-container'),
-                loader: document.getElementById('loader'),
-                errorMessage: document.getElementById('error-message'),
-                modal: document.getElementById('infoModal'),
-                btnInfo: document.getElementById('btn-info'),
-                btnCloseModal: document.getElementById('close-modal-btn'),
-                btnZoomIn: document.getElementById('btn-zoom-in'),
-                btnZoomOut: document.getElementById('btn-zoom-out'),
-                btnFull: document.getElementById('btn-full'),
-                canvas: document.getElementById('pdf-render'),
-                container: document.getElementById('viewer-container')
-            };
+          canvas.width = Math.floor(renderViewport.width);
+          canvas.height = Math.floor(renderViewport.height);
+          canvas.style.width = `${Math.floor(baseViewport.width)}px`;
+          canvas.style.height = `${Math.floor(baseViewport.height)}px`;
 
-            // Estado de la aplicación
-            let panzoomInstance = null;
+          // Fondo sólido para evitar composición costosa en algunos browsers
+          ctx.save();
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.restore();
 
-            // ==========================================
-            // MÓDULO: GRANULADO
-            // ==========================================
-            function initGrained() {
-                if (typeof grained !== 'function') {
-                    console.warn('Grained library not loaded');
-                    return;
-                }
-                
-                try {
-                    grained('#grained-container', CONFIG.grained);
-                } catch (e) {
-                    console.warn('Error initializing grained effect:', e.message);
-                }
+          const renderTask = currentPage.render({ canvasContext: ctx, viewport: renderViewport });
+          await renderTask.promise;
+
+          setStatus({ visible: false });
+          initPanzoom();
+          enableZoomButtons(true);
+        } catch (err) {
+          console.error('Error cargando PDF:', err);
+          setStatus({
+            visible: true,
+            html: `
+              <div class="max-w-xl">
+                <div class="text-sm tracking-wide"><strong>No se pudo cargar el PDF.</strong></div>
+                <div class="text-[12px] mt-2 text-[#aaa]">Verifica que el archivo exista con este nombre exacto:</div>
+                <div class="text-[12px] mt-2 text-white/90 break-all">${PDF_URL}</div>
+                <div class="text-[11px] mt-4 text-[#666]">También revisa la consola del navegador para más detalles.</div>
+              </div>
+            `
+          });
+          enableZoomButtons(false);
+        }
+      }
+
+      function initPanzoom() {
+        // Destruye instancia previa si recargara
+        if (panzoomInstance && panzoomInstance.destroy) {
+          try { panzoomInstance.destroy(); } catch (_) {}
+        }
+
+        const startScale = computeFitScale();
+
+        panzoomInstance = Panzoom(canvas, {
+          maxScale: 6,
+          minScale: 0.05,
+          startScale,
+          contain: 'outside',
+          cursor: 'grab'
+        });
+
+        // Rueda mouse
+        container.addEventListener('wheel', panzoomInstance.zoomWithWheel, { passive: false });
+
+        // Botones
+        btnZoomIn.addEventListener('click', () => panzoomInstance && panzoomInstance.zoomIn());
+        btnZoomOut.addEventListener('click', () => panzoomInstance && panzoomInstance.zoomOut());
+
+        // Atajos (no cambian UI; sólo mejora usabilidad)
+        window.addEventListener('keydown', (e) => {
+          if (!panzoomInstance) return;
+          if (infoModal.classList.contains('show')) return; // evita atajos mientras modal está abierto
+
+          if (e.key === '+' || (e.key === '=' && (e.ctrlKey || e.metaKey))) {
+            e.preventDefault();
+            panzoomInstance.zoomIn();
+          } else if (e.key === '-' || (e.key === '_' && (e.ctrlKey || e.metaKey))) {
+            e.preventDefault();
+            panzoomInstance.zoomOut();
+          } else if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            panzoomInstance.zoom(startScale, { animate: true });
+            panzoomInstance.pan(0, 0, { animate: true });
+          } else if (e.key.toLowerCase() === 'f') {
+            // fullscreen
+            toggleFullscreen();
+          } else if (e.key.toLowerCase() === 'i') {
+            toggleInfo();
+          }
+        }, { passive: false });
+
+        // Re-ajuste en resize: recalcula un "fit" y aplica suavemente.
+        let resizeRaf = null;
+        window.addEventListener('resize', () => {
+          if (!panzoomInstance) return;
+          if (resizeRaf) cancelAnimationFrame(resizeRaf);
+          resizeRaf = requestAnimationFrame(() => {
+            const fit = computeFitScale();
+            // No forzamos reset total para respetar la posición del usuario.
+            // Sólo aseguramos que el zoom mínimo no quede fuera de rango.
+            const state = panzoomInstance.getState();
+            if (state && typeof state.scale === 'number' && state.scale < fit * 0.6) {
+              panzoomInstance.zoom(fit, { animate: true });
             }
+          });
+        });
+      }
 
-            // ==========================================
-            // MÓDULO: MODAL
-            // ==========================================
-            const Modal = {
-                isOpen: false,
-
-                open() {
-                    this.isOpen = true;
-                    DOM.modal.classList.add('show');
-                    DOM.btnInfo.classList.add('active');
-                    DOM.btnCloseModal.focus();
-                },
-
-                close() {
-                    this.isOpen = false;
-                    DOM.modal.classList.remove('show');
-                    DOM.btnInfo.classList.remove('active');
-                    DOM.btnInfo.focus();
-                },
-
-                toggle() {
-                    if (this.isOpen) {
-                        this.close();
-                    } else {
-                        this.open();
-                    }
-                },
-
-                init() {
-                    // Botón info
-                    DOM.btnInfo.addEventListener('click', () => this.toggle());
-                    
-                    // Botón cerrar
-                    DOM.btnCloseModal.addEventListener('click', () => this.close());
-                    
-                    // Click en overlay
-                    DOM.modal.addEventListener('click', (e) => {
-                        if (e.target === DOM.modal) {
-                            this.close();
-                        }
-                    });
-                    
-                    // Tecla ESC
-                    document.addEventListener('keydown', (e) => {
-                        if (e.key === 'Escape' && this.isOpen) {
-                            this.close();
-                        }
-                    });
-                }
-            };
-
-            // ==========================================
-            // MÓDULO: FULLSCREEN
-            // ==========================================
-            const Fullscreen = {
-                toggle() {
-                    const doc = document.documentElement;
-
-                    if (!this.isFullscreen()) {
-                        // Entrar en fullscreen (con prefijos para compatibilidad)
-                        if (doc.requestFullscreen) {
-                            doc.requestFullscreen();
-                        } else if (doc.webkitRequestFullscreen) {
-                            doc.webkitRequestFullscreen();
-                        } else if (doc.msRequestFullscreen) {
-                            doc.msRequestFullscreen();
-                        }
-                    } else {
-                        // Salir de fullscreen
-                        if (document.exitFullscreen) {
-                            document.exitFullscreen();
-                        } else if (document.webkitExitFullscreen) {
-                            document.webkitExitFullscreen();
-                        } else if (document.msExitFullscreen) {
-                            document.msExitFullscreen();
-                        }
-                    }
-                },
-
-                isFullscreen() {
-                    return !!(
-                        document.fullscreenElement ||
-                        document.webkitFullscreenElement ||
-                        document.msFullscreenElement
-                    );
-                },
-
-                init() {
-                    DOM.btnFull.addEventListener('click', () => this.toggle());
-                }
-            };
-
-            // ==========================================
-            // MÓDULO: LOADER
-            // ==========================================
-            const Loader = {
-                show() {
-                    DOM.loader.classList.remove('hidden');
-                    DOM.errorMessage.classList.remove('show');
-                },
-
-                hide() {
-                    DOM.loader.classList.add('hidden');
-                },
-
-                showError() {
-                    this.hide();
-                    DOM.errorMessage.classList.add('show');
-                }
-            };
-
-            // ==========================================
-            // MÓDULO: PDF VIEWER
-            // ==========================================
-            const PDFViewer = {
-                async init() {
-                    // Verificar que PDF.js está cargado
-                    if (typeof pdfjsLib === 'undefined') {
-                        console.error('PDF.js library not loaded');
-                        Loader.showError();
-                        return;
-                    }
-
-                    // Configurar worker
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = CONFIG.pdfWorkerUrl;
-
-                    try {
-                        // Cargar documento PDF
-                        const pdf = await pdfjsLib.getDocument(CONFIG.pdfUrl).promise;
-                        
-                        // Obtener primera página
-                        const page = await pdf.getPage(1);
-                        
-                        // Renderizar
-                        await this.renderPage(page);
-                        
-                        // Inicializar Panzoom después de renderizar
-                        this.initPanzoom();
-                        
-                        // Ocultar loader y mostrar canvas
-                        Loader.hide();
-                        DOM.canvas.classList.add('loaded');
-
-                    } catch (error) {
-                        console.error('Error loading PDF:', error.message);
-                        Loader.showError();
-                    }
-                },
-
-                async renderPage(page) {
-                    const ctx = DOM.canvas.getContext('2d');
-                    const viewport = page.getViewport({ scale: CONFIG.pdfRenderScale });
-
-                    // Ajustar tamaño del canvas
-                    DOM.canvas.height = viewport.height;
-                    DOM.canvas.width = viewport.width;
-
-                    // Renderizar página
-                    const renderContext = {
-                        canvasContext: ctx,
-                        viewport: viewport
-                    };
-
-                    await page.render(renderContext).promise;
-                    console.log('PDF rendered successfully');
-                },
-
-                initPanzoom() {
-                    // Verificar que Panzoom está disponible
-                    if (typeof Panzoom !== 'function') {
-                        console.error('Panzoom library not loaded');
-                        return;
-                    }
-
-                    panzoomInstance = Panzoom(DOM.canvas, CONFIG.panzoom);
-
-                    // Zoom con rueda del mouse
-                    DOM.container.addEventListener('wheel', panzoomInstance.zoomWithWheel, { passive: false });
-
-                    // Botones de zoom
-                    DOM.btnZoomIn.addEventListener('click', () => {
-                        if (panzoomInstance) panzoomInstance.zoomIn();
-                    });
-
-                    DOM.btnZoomOut.addEventListener('click', () => {
-                        if (panzoomInstance) panzoomInstance.zoomOut();
-                    });
-
-                    console.log('Panzoom initialized');
-                }
-            };
-
-            // ==========================================
-            // INICIALIZACIÓN
-            // ==========================================
-            function init() {
-                // Mostrar loader
-                Loader.show();
-
-                // Inicializar efecto granulado
-                initGrained();
-
-                // Inicializar modal
-                Modal.init();
-
-                // Inicializar fullscreen
-                Fullscreen.init();
-
-                // Inicializar visor de PDF
-                PDFViewer.init();
-            }
-
-            // Esperar a que el DOM esté listo
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                init();
-            }
-
-        })();
-    </script>
-
+      // ====== INICIO ======
+      loadPdf(PDF_URL);
+    })();
+  </script>
 </body>
 </html>
