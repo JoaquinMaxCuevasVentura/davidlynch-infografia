@@ -10,8 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- ESTILOS DFLIP (Necesarios para PDF) -->
-    <link href="https://cdn.jsdelivr.net/npm/dflip/css/dflip.min.css" rel="stylesheet" type="text/css">
+    <!-- ICONOS -->
     <link href="https://cdn.jsdelivr.net/npm/dflip/css/themify-icons.min.css" rel="stylesheet" type="text/css">
 
     <style>
@@ -35,10 +34,28 @@
             z-index: 0; pointer-events: none;
         }
 
-        /* VISOR */
-        #flipbook-container {
-            height: 100vh; width: 100vw;
-            position: relative; z-index: 10; 
+        /* CONTENEDOR PRINCIPAL DEL VISOR */
+        #viewer-container {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; /* Ocultamos barras de scroll nativas */
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab; /* Cursor de manita para indicar que se puede arrastrar */
+        }
+        
+        #viewer-container:active {
+            cursor: grabbing;
+        }
+
+        /* El Canvas donde se dibuja el PDF */
+        #pdf-render {
+            max-width: 90%;
+            height: auto;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
 
         /* --- BARRA DE HERRAMIENTAS (DISEÑO STUPOR) --- */
@@ -53,7 +70,7 @@
             justify-content: center;
             background: transparent;
             padding: 0;
-            gap: 25px; /* Espaciado Stupor */
+            gap: 25px; 
         }
 
         /* Estilo Botones */
@@ -95,9 +112,6 @@
             transform: scale(1.2);
             text-shadow: 0 0 15px rgba(220, 107, 47, 0.6);
         }
-
-        /* OCULTAR UI NATIVA DE DFLIP */
-        .df-ui-wrapper { display: none !important; }
 
         /* --- MODAL INFO --- */
         .modal-overlay {
@@ -152,7 +166,7 @@
         </div>
     </div>
 
-    <!-- BARRA DE HERRAMIENTAS (HTML PERSONALIZADO) -->
+    <!-- BARRA DE HERRAMIENTAS -->
     <div id="custom-toolbar">
         <button class="custom-btn" id="btn-zoom-in" title="Acercar"><i class="ti-zoom-in"></i></button>
         <button class="custom-btn" id="btn-zoom-out" title="Alejar"><i class="ti-zoom-out"></i></button>
@@ -160,13 +174,19 @@
         <button class="custom-btn" id="btn-info" title="Información"><i class="ti-info-alt"></i></button>
     </div>
 
-    <!-- VISOR DFLIP -->
-    <div id="flipbook-container"></div>
+    <!-- CONTENEDOR DONDE SE CARGA EL PDF (CANVAS) -->
+    <div id="viewer-container">
+        <canvas id="pdf-render"></canvas>
+    </div>
 
     <!-- SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dflip/js/dflip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/grained/0.0.2/grained.min.js"></script>
+    
+    <!-- 1. PDF.js (Motor de renderizado) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- 2. Panzoom (Librería de navegación tipo mapa) -->
+    <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
 
     <script>
         // 1. GRANULADO
@@ -197,82 +217,86 @@
             if (event.target == document.getElementById('infoModal')) toggleInfo();
         }
 
-        // 3. INICIAR VISOR (DFLIP CON PDF)
-        jQuery(document).ready(function() {
-            
-            // NOMBRE DEL PDF
-            var pdfName = "FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.pdf";
-            
-            // Variable para almacenar la instancia del libro
-            var bookInstance;
+        // 3. CARGAR PDF Y CONFIGURAR ZOOM (Panzoom + PDF.js)
+        
+        // NOMBRE DEL PDF
+        var url = 'FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.pdf';
 
-            var bookOptions = {
-                source: pdfName,
-                height: "100%",
-                
-                // MODO INFOGRAFÍA
-                webgl: true,            
-                singlePageMode: true,   // Clave para ver todo plano
-                hard: "none",
-                pageMode: 1,            // Single page view
-                
-                // Configuración Zoom
-                maxZoom: 8,             
-                
-                backgroundColor: "transparent",
-                disableFolderPath: true, 
-                
-                // Desactivamos el scroll nativo de dFlip porque suele invertirse en este modo
-                // Lo manejaremos manualmente abajo
-                scrollWheel: false, 
+        // Configuración Worker PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-                // Ocultar toda la UI nativa (usamos la nuestra)
-                hideControls: "all",
-                allControls: "",
+        // Elementos DOM
+        var canvas = document.getElementById('pdf-render');
+        var ctx = canvas.getContext('2d');
+        var container = document.getElementById('viewer-container');
+        var panzoomInstance = null;
 
-                onReady: function(scene) {
-                    bookInstance = scene; // Capturamos la instancia
+        // Renderizado del PDF
+        pdfjsLib.getDocument(url).promise.then(function(pdf) {
+            // Obtenemos la página 1
+            pdf.getPage(1).then(function(page) {
+                
+                // Calculamos escala para alta calidad (x2 o x3 veces el tamaño normal)
+                var scale = 2.5; 
+                var viewport = page.getViewport({scale: scale});
 
-                    // --- VINCULACIÓN MANUAL DE BOTONES ---
+                // Ajustamos el canvas
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // Renderizamos
+                var renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                var renderTask = page.render(renderContext);
+                
+                renderTask.promise.then(function() {
+                    console.log('PDF Renderizado');
                     
-                    // Zoom In
-                    $('#btn-zoom-in').on('click', function() {
-                        if(bookInstance) bookInstance.zoomIn();
+                    // --- INICIAR PANZOOM (Interacción Mapa) ---
+                    panzoomInstance = Panzoom(canvas, {
+                        maxScale: 6,       // Zoom máximo
+                        minScale: 0.1,     // Zoom mínimo
+                        startScale: 0.4,   // Escala inicial (Ajustada para ver toda la infografía)
+                        contain: 'outside', // Comportamiento de bordes
+                        cursor: 'grab'
                     });
 
-                    // Zoom Out
-                    $('#btn-zoom-out').on('click', function() {
-                        if(bookInstance) bookInstance.zoomOut();
-                    });
+                    // Activar zoom con rueda del mouse
+                    container.addEventListener('wheel', panzoomInstance.zoomWithWheel);
 
-                    // Fullscreen
-                    $('#btn-full').on('click', function() {
-                        if(bookInstance) bookInstance.toggleFullscreen();
-                    });
-
-                    // --- CORRECCIÓN MANUAL DE SCROLL (RUEDA DEL MOUSE) ---
-                    // Forzamos que: Rueda Arriba = Acercar, Rueda Abajo = Alejar
-                    var container = document.getElementById('flipbook-container');
+                    // --- VINCULACIÓN DE BOTONES ---
                     
-                    container.addEventListener('wheel', function(e) {
-                        if(bookInstance) {
-                            // Prevenir scroll de la página
-                            // e.preventDefault(); 
-                            
-                            if (e.deltaY < 0) {
-                                // Scroll Arriba -> Zoom In
-                                bookInstance.zoomIn();
-                            } else {
-                                // Scroll Abajo -> Zoom Out
-                                bookInstance.zoomOut();
+                    // Zoom +
+                    document.getElementById('btn-zoom-in').addEventListener('click', function() {
+                        panzoomInstance.zoomIn();
+                    });
+
+                    // Zoom -
+                    document.getElementById('btn-zoom-out').addEventListener('click', function() {
+                        panzoomInstance.zoomOut();
+                    });
+
+                    // Reset / Ajustar (Opcional, hace que se centre de nuevo)
+                    // Puedes cambiar esto a toggleFullscreen si prefieres
+                    
+                    // Pantalla Completa
+                    document.getElementById('btn-full').addEventListener('click', function() {
+                        if (!document.fullscreenElement) {
+                            document.documentElement.requestFullscreen();
+                        } else {
+                            if (document.exitFullscreen) {
+                                document.exitFullscreen();
                             }
                         }
-                    }, { passive: true });
-                }
-            };
+                    });
 
-            var book = $("#flipbook-container").flipBook(bookOptions.source, bookOptions);
+                });
+            });
         });
+
     </script>
 
 </body>
