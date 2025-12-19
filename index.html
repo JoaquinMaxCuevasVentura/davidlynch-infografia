@@ -10,8 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- ESTILOS DFLIP -->
-    <link href="https://cdn.jsdelivr.net/npm/dflip/css/dflip.min.css" rel="stylesheet" type="text/css">
+    <!-- ICONOS (Themify) -->
     <link href="https://cdn.jsdelivr.net/npm/dflip/css/themify-icons.min.css" rel="stylesheet" type="text/css">
 
     <style>
@@ -29,19 +28,23 @@
             overflow: hidden;
         }
 
-        /* FONDO */
+        /* FONDO (Ruido) */
         #grained-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0; pointer-events: none;
         }
 
-        /* VISOR */
-        #flipbook-container {
-            height: 100vh; width: 100vw;
-            position: relative; z-index: 10; 
+        /* VISOR (OpenSeadragon) */
+        #openseadragon-viewer {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 10;
         }
 
-        /* --- UI PERSONALIZADA (BARRA DE HERRAMIENTAS) --- */
+        /* --- BARRA DE HERRAMIENTAS PERSONALIZADA --- */
         #custom-toolbar {
             position: fixed;
             bottom: 30px;
@@ -56,34 +59,30 @@
             gap: 15px; /* Espacio uniforme entre iconos */
         }
 
-        /* Botones unificados */
+        /* Estilo Botones */
         .custom-btn {
             background: transparent;
             border: none;
             color: #AAAAAA;
             cursor: pointer;
-            width: 40px;  /* Ancho fijo para alineación perfecta */
-            height: 40px; /* Alto fijo */
+            width: 40px;  
+            height: 40px; 
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
             padding: 0;
-            margin: 0;
+            outline: none;
         }
 
         /* Iconos */
         .custom-btn i {
-            font-size: 22px; /* Tamaño base */
-            line-height: 0;  /* Elimina espacios fantasma */
-            display: block;
+            font-size: 22px; 
+            line-height: 0; 
         }
 
-        /* Ajuste óptico específico para el icono de Información (i) */
-        /* Lo hacemos un pelín más pequeño para que pese igual visualmente */
-        #btn-info i {
-            font-size: 19px; 
-        }
+        /* Ajuste óptico icono INFO */
+        #btn-info i { font-size: 19px; }
 
         /* Hover */
         .custom-btn:hover, .custom-btn.active {
@@ -92,15 +91,11 @@
             text-shadow: 0 0 15px rgba(220, 107, 47, 0.6);
         }
 
-        /* Ocultar interfaz nativa de dFlip completamente */
-        .df-ui-wrapper { display: none !important; }
-
-
         /* --- MODAL INFO (ESTILO STUPOR) --- */
         .modal-overlay {
             display: none; 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95); 
+            background: rgba(0, 0, 0, 0.98); 
             z-index: 9999;
             justify-content: center; align-items: center;
             opacity: 0; transition: opacity 0.3s ease;
@@ -116,7 +111,12 @@
         .modal-subtitle { font-size: 11px; color: var(--accent-color); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
         .modal-body { font-size: 14px; color: #ccc; line-height: 1.6; font-weight: 300; }
         .modal-note { margin-top: 30px; font-size: 10px; color: #666; border-top: 1px solid #222; padding-top: 15px; }
-        .close-modal { position: absolute; top: -50px; right: 0; color: #666; font-size: 30px; cursor: pointer; transition: 0.2s; font-weight: 100; }
+        
+        .close-modal { 
+            position: absolute; top: -50px; right: 0; 
+            color: #666; font-size: 30px; cursor: pointer; 
+            transition: 0.2s; font-weight: 100; font-family: sans-serif;
+        }
         .close-modal:hover { color: var(--accent-color); }
         .ti-info-custom:before { content: "\e645"; } 
 
@@ -139,13 +139,13 @@
                 <strong style="color:white; font-size:15px; letter-spacing:1px;">Joaquin Max Cuevas Ventura</strong><br>
                 2021</p>
                 <div class="modal-note">
-                    Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico, exento de cualquier propósito comercial o de lucro.
+                    Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico con fines pedagógicos y de exhibición de portafolio, exento de cualquier propósito comercial o de lucro.
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- BARRA DE HERRAMIENTAS PERSONALIZADA (ALIGNMENT FIX) -->
+    <!-- BARRA DE HERRAMIENTAS (Conectada a OpenSeadragon) -->
     <div id="custom-toolbar">
         <button class="custom-btn" id="btn-zoom-in" title="Acercar"><i class="ti-zoom-in"></i></button>
         <button class="custom-btn" id="btn-zoom-out" title="Alejar"><i class="ti-zoom-out"></i></button>
@@ -153,13 +153,15 @@
         <button class="custom-btn" id="btn-info" title="Información"><i class="ti-info-alt"></i></button>
     </div>
 
-    <!-- VISOR -->
-    <div id="flipbook-container"></div>
+    <!-- VISOR OPENSEADRAGON -->
+    <div id="openseadragon-viewer"></div>
 
     <!-- SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dflip/js/dflip.min.js"></script>
+    <!-- Grained -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/grained/0.0.2/grained.min.js"></script>
+    <!-- OpenSeadragon (Librería especializada en Zoom de imágenes grandes) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script>
 
     <script>
         // 1. GRANULADO
@@ -185,86 +187,48 @@
                 btn.classList.add('active');
             }
         }
-        
-        // Listener botón Info
         document.getElementById('btn-info').onclick = toggleInfo;
         window.onclick = function(event) {
             if (event.target == document.getElementById('infoModal')) toggleInfo();
         }
 
-        // 3. INICIAR VISOR
-        jQuery(document).ready(function() {
+        // 3. INICIAR VISOR OPENSEADRAGON
+        // Asegúrate que la imagen está en la misma carpeta
+        var imageName = "FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.png";
+
+        var viewer = OpenSeadragon({
+            id: "openseadragon-viewer",
+            prefixUrl: "", // No necesitamos iconos por defecto
             
-            var imageName = "FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.png";
-            var flipbookInstance = null; // Guardar referencia global
+            // Carga de imagen única
+            tileSources: {
+                type: 'image',
+                url:  imageName
+            },
 
-            var bookOptions = {
-                source: [imageName],
-                height: "100%",
-                webgl: true,            
-                singlePageMode: true,
-                hard: "none",
-                maxZoom: 12,             
-                
-                backgroundColor: "transparent",
-                disableFolderPath: true, 
-                scrollWheel: false, // DESACTIVAMOS EL NATIVO para hacerlo nosotros bien
+            // VINCULACIÓN DE BOTONES
+            // OpenSeadragon permite conectar IDs de HTML directamente para que hagan la función
+            zoomInButton:   "btn-zoom-in",
+            zoomOutButton:  "btn-zoom-out",
+            fullPageButton: "btn-full",
 
-                // Ocultamos TODOS los controles nativos para usar los nuestros
-                hideControls: "all",
-                allControls: "",
-
-                onReady: function(scene) {
-                    flipbookInstance = scene; // Guardamos la instancia para controlarla
-                    
-                    // --- CORRECCIÓN LÓGICA DE BOTONES ---
-                    
-                    // Zoom IN (+)
-                    $('#btn-zoom-in').on('click', function() {
-                        if(flipbookInstance) {
-                            // Forzamos zoom positivo
-                            flipbookInstance.zoom(flipbookInstance.zoomValue + 0.5);
-                        }
-                    });
-
-                    // Zoom OUT (-)
-                    $('#btn-zoom-out').on('click', function() {
-                        if(flipbookInstance) {
-                            // Forzamos zoom negativo
-                            var newZoom = flipbookInstance.zoomValue - 0.5;
-                            if(newZoom < 1) newZoom = 1; // Evitar alejar demasiado
-                            flipbookInstance.zoom(newZoom);
-                        }
-                    });
-
-                    // Fullscreen
-                    $('#btn-full').on('click', function() {
-                        if(flipbookInstance) flipbookInstance.toggleFullscreen();
-                    });
-
-                    // --- CORRECCIÓN DE SCROLL (RUEDA) ---
-                    // Forzamos: Scroll Arriba = Acercar, Scroll Abajo = Alejar
-                    var container = document.getElementById('flipbook-container');
-                    
-                    container.addEventListener('wheel', function(e) {
-                        e.preventDefault(); // Detener comportamiento nativo errático
-                        
-                        if(flipbookInstance) {
-                            // deltaY < 0 significa Scroll Arriba
-                            if (e.deltaY < 0) {
-                                flipbookInstance.zoom(flipbookInstance.zoomValue + 0.2); // Acercar
-                            } else {
-                                var newZoom = flipbookInstance.zoomValue - 0.2;
-                                if(newZoom < 1) newZoom = 1;
-                                flipbookInstance.zoom(newZoom); // Alejar
-                            }
-                        }
-                    }, { passive: false });
-                }
-            };
-
-            var book = $("#flipbook-container").flipBook(bookOptions.source, bookOptions);
+            // Configuración de comportamiento
+            showNavigationControl: false, // Ocultar barra nativa fea
+            visibilityRatio: 0.8,         // Permite mover la imagen casi fuera de pantalla pero no perderla
+            constrainDuringPan: true,
+            defaultZoomLevel: 0,          // Ajustar al contenedor (Fit)
+            minZoomImageRatio: 0.8,       // Qué tan lejos se puede ver
+            maxZoomPixelRatio: 3,         // Qué tanto zoom profundo (3 = 300% de resolución original)
+            
+            // Scroll del mouse (Nativo de la librería: Arriba=Acerca, Abajo=Aleja)
+            gestureSettingsMouse: {
+                clickToZoom: false,       // Desactivamos click para zoom (opcional)
+                scrollToZoom: true
+            },
+            
+            animationTime: 0.5,           // Suavidad
         });
+
     </script>
 
 </body>
