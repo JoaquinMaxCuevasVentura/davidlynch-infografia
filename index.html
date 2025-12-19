@@ -5,19 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DAVID LYNCH | Infografía fílmica</title>
 
-    <!-- 1. FUENTE ARCHIVO -->
+    <!-- 1. FUENTE: ARCHIVO -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-    <!-- 2. ICONOS (Themify para mantener coherencia visual) -->
+    <!-- 2. ICONOS (Los mismos que usa dFlip en tus otros proyectos) -->
     <link href="https://cdn.jsdelivr.net/npm/themify-icons.min.css" rel="stylesheet" type="text/css">
+    
+    <!-- 3. ESTILOS TIPPY -->
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css"/>
 
     <style>
-        /* --- CONFIGURACIÓN VISUAL (ESTANDARIZADA) --- */
+        /* --- SISTEMA DE DISEÑO (LYNCH) --- */
         :root {
             --bg-color: #050505;      
-            --accent-color: #dc6b2f;  
+            --accent-color: #dc6b2f;
             --text-main: #FFFFFF;     
             --ui-opacity: 0.7;
         }
@@ -25,118 +28,117 @@
         body, html {
             height: 100%;
             margin: 0;
+            padding: 0;
             background-color: var(--bg-color);
             font-family: 'Archivo', sans-serif !important;
-            overflow: hidden; /* Evita scroll nativo para el zoom */
+            overflow: hidden; 
         }
 
-        /* Capa de Ruido (Fondo) */
+        /* Grano de fondo */
         #grained-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
         }
 
-        /* --- CONTENEDOR PANZOOM --- */
-        #panzoom-wrapper {
+        /* --- CONTENEDOR IMAGEN (ZOOM) --- */
+        #panzoom-container {
             width: 100vw;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 10;
             cursor: grab;
+            position: relative;
+            z-index: 10;
+            padding-bottom: 50px; /* Espacio para que la barra no tape la imagen al inicio */
+            box-sizing: border-box;
         }
-        #panzoom-wrapper:active { cursor: grabbing; }
+        #panzoom-container:active { cursor: grabbing; }
 
         .infografia-img {
-            max-width: 90%;
-            max-height: 90%;
+            max-width: 95%; 
+            max-height: 85vh; 
+            width: auto;
+            height: auto;
             display: block;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            transition: none; /* Evita conflictos con Panzoom */
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
-        /* --- INTERFAZ MINIMALISTA (ESTILO STUPOR) --- */
-        .toolbar-custom {
+        /* --- BARRA DE HERRAMIENTAS (Clonada de dFlip) --- */
+        .custom-toolbar {
             position: fixed;
-            bottom: 30px;
+            bottom: 30px; /* Misma altura que dFlip */
             left: 50%;
             transform: translateX(-50%);
-            z-index: 100;
+            z-index: 1000;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: transparent;
+            padding: 10px 20px;
+            /* Fondo transparente como pediste */
+            background: transparent; 
         }
 
-        /* Botones idénticos a los del flipbook */
-        .ui-btn {
+        /* --- BOTONES (Exactamente el mismo estilo CSS que STUPOR) --- */
+        .tool-btn {
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
             color: var(--text-main) !important;
+            border-radius: 0 !important; 
             margin: 0 10px !important;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             opacity: var(--ui-opacity);
-            font-size: 18px; /* Tamaño de icono de dFlip */
-            cursor: pointer;
-            padding: 5px;
-            display: flex;
+            width: 32px !important; /* Tamaño estándar dFlip */
+            height: 32px !important;
+            display: flex !important;
             align-items: center;
-        }
-
-        /* Interacción (Naranja + Escala + Brillo) */
-        .ui-btn:hover, .ui-btn.active {
-            color: var(--accent-color) !important;
-            opacity: 1 !important;
-            transform: scale(1.3);
-            text-shadow: 0 0 10px rgba(220, 107, 47, 0.5);
-        }
-
-        /* Separador visual sutil entre zoom e info */
-        .separator {
-            width: 1px;
-            height: 20px;
-            background: rgba(255,255,255,0.1);
-            margin: 0 5px;
-        }
-
-        /* --- VENTANA MODAL INFO (ESTILO STUPOR) --- */
-        .modal-overlay {
-            display: none; 
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95); 
-            z-index: 9999;
             justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            font-size: 18px; /* Tamaño icono */
+            cursor: pointer;
+        }
+
+        /* Interacción: Color + Escala + Glow (Sin círculos) */
+        .tool-btn:hover, .tool-btn.active {
+            color: var(--accent-color) !important;
+            background: transparent !important;
+            opacity: 1 !important;
+            transform: scale(1.4); 
+            text-shadow: 0 0 15px rgba(221, 30, 37, 0.8); 
+        }
+
+        /* --- VENTANA MODAL INFO (Estándar) --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(5px); z-index: 2000;
+            justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease;
         }
         .modal-overlay.show { display: flex; opacity: 1; }
 
         .modal-content {
-            color: #fff;
-            max-width: 500px;
-            width: 80%;
-            text-align: center;
-            position: relative;
+            background: transparent; color: #fff; max-width: 500px; width: 80%;
+            text-align: center; position: relative;
         }
         .modal-line { width: 40px; height: 2px; background-color: var(--accent-color); margin: 20px auto; }
         .modal-title { font-size: 24px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 3px; }
         .modal-subtitle { font-size: 11px; color: var(--accent-color); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
         .modal-body { font-size: 14px; color: #ccc; line-height: 1.6; font-weight: 300; }
-        .modal-note { margin-top: 30px; font-size: 10px; color: #666; border-top: 1px solid #222; padding-top: 15px; }
+        .modal-note { margin-top: 30px; font-size: 11px; color: #666; max-width: 90%; margin-left: auto; margin-right: auto; padding-top: 15px; border-top: 1px solid #222; }
         .close-modal { position: absolute; top: -50px; right: 0; color: #666; font-size: 30px; cursor: pointer; transition: 0.2s; font-weight: 100; }
-        .close-modal:hover { color: var(--accent-color); }
+        .close-modal:hover { color: var(--accent-color); transform: scale(1.1); }
+
+        /* --- TOOLTIPS (Estilo Stupor) --- */
+        .tippy-box[data-theme~='stupor'] {
+            background-color: #111; color: var(--accent-color); font-family: 'Archivo', sans-serif;
+            font-weight: 700; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+            border: 1px solid var(--accent-color); border-radius: 2px;
+        }
+        .tippy-arrow { color: var(--accent-color); }
 
     </style>
 </head>
 <body>
 
-    <!-- FONDO CON GRANO -->
     <div id="grained-container"></div>
 
     <!-- MODAL INFO -->
@@ -144,95 +146,100 @@
         <div class="modal-content">
             <span class="close-modal" onclick="toggleInfo()">&times;</span>
             <div class="modal-title">DAVID LYNCH</div>
-            <div class="modal-subtitle">Decodificación fílmica (Infografía)</div>
+            <div class="modal-subtitle">Decodificación fílmica [Infografía]</div>
             <div class="modal-line"></div>
             <div class="modal-body">
                 <p>INVESTIGACIÓN, REDACCIÓN E ILUSTRACIÓN<br>
                 <strong style="color:white; font-size:15px; letter-spacing:1px;">Joaquin Max Cuevas Ventura</strong><br>
                 2021</p>
                 <div class="modal-note">
-                    Nota: Este fue un ejercicio de diseño editorial, por lo que esta publicación constituye un proyecto académico con fines pedagógicos y de exhibición de portafolio, exento de cualquier propósito comercial o de lucro.
+                    Nota: Este fue un ejercicio de diseño de información, por lo que esta publicación constituye un proyecto académico con fines pedagógicos y de exhibición de portafolio, exento de cualquier propósito comercial o de lucro.
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ÁREA DE ZOOM -->
-    <div id="panzoom-wrapper">
-        <img id="panzoom-element" class="infografia-img" 
+    <!-- ÁREA DE IMAGEN -->
+    <div id="panzoom-container">
+        <!-- ASEGÚRATE QUE EL NOMBRE SEA EXACTO -->
+        <img class="infografia-img" id="panzoom-element" 
              src="FILMOGRAFIADAVIDLYNCH_InfografiaCompleta_WEB-FINAL_v01_18122025.png" 
-             alt="Infografía">
+             alt="Infografía David Lynch">
     </div>
 
-    <!-- BARRA DE HERRAMIENTAS (SIMULANDO DFLIP) -->
-    <div class="toolbar-custom">
-        <button class="ui-btn" id="zoom-in" title="Zoom In"><i class="ti-plus"></i></button>
-        <button class="ui-btn" id="zoom-out" title="Zoom Out"><i class="ti-minus"></i></button>
-        <button class="ui-btn" id="fullscreen" title="Pantalla Completa" onclick="toggleFullScreen()"><i class="ti-fullscreen"></i></button>
-        <div class="separator"></div>
-        <button class="ui-btn" id="btn-info" title="Información" onclick="toggleInfo()"><i class="ti-info-alt"></i></button>
+    <!-- BARRA DE HERRAMIENTAS (ESTÉTICA IDÉNTICA AL PDF) -->
+    <div class="custom-toolbar">
+        <!-- Zoom In -->
+        <button class="tool-btn" id="btn-in" data-tippy-content="ZOOM +">
+            <i class="ti-zoom-in"></i>
+        </button>
+        
+        <!-- Zoom Out -->
+        <button class="tool-btn" id="btn-out" data-tippy-content="ZOOM -">
+            <i class="ti-zoom-out"></i>
+        </button>
+        
+        <!-- Pantalla Completa -->
+        <button class="tool-btn" id="btn-full" onclick="toggleFullScreen()" data-tippy-content="PANTALLA COMPLETA">
+            <i class="ti-fullscreen"></i>
+        </button>
+        
+        <!-- Información (Separación visual sutil) -->
+        <div style="width: 15px;"></div> 
+
+        <button class="tool-btn" id="btn-info" onclick="toggleInfo()" data-tippy-content="INFORMACIÓN">
+            <i class="ti-info-alt"></i> <!-- Mismo icono 'i' que en los otros proyectos -->
+        </button>
     </div>
 
-    <!-- 3. SCRIPTS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- SCRIPTS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/grained/0.0.2/grained.min.js"></script>
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
 
     <script>
-        // 1. INICIAR GRANO
+        // 1. GRANO
         try {
             grained('#grained-container', {
                 "animate": true, "patternWidth": 100, "patternHeight": 100,
-                "grainOpacity": 0.05, "grainDensity": 1, "grainWidth": 1, "grainHeight": 1
+                "grainOpacity": 0.08, "grainDensity": 1.5, "grainWidth": 1, "grainHeight": 1
             });
         } catch(e) {}
 
-        // 2. CONFIGURACIÓN PANZOOM (ZOOM PROFUNDO)
+        // 2. ZOOM
         const elem = document.getElementById('panzoom-element');
         const panzoom = Panzoom(elem, {
-            maxScale: 8, // Permite un zoom de hasta 800% para ver detalles
-            minScale: 0.5,
-            contain: 'outside',
-            startScale: 0.9
+            maxScale: 10, minScale: 0.1, contain: 'outside', startScale: 0.9, cursor: 'default'
         });
-
-        // Habilitar rueda del ratón para zoom
         elem.parentElement.addEventListener('wheel', panzoom.zoomWithWheel);
+        document.getElementById('btn-in').addEventListener('click', panzoom.zoomIn);
+        document.getElementById('btn-out').addEventListener('click', panzoom.zoomOut);
 
-        // Vincular botones personalizados
-        document.getElementById('zoom-in').addEventListener('click', panzoom.zoomIn);
-        document.getElementById('zoom-out').addEventListener('click', panzoom.zoomOut);
-
-        // 3. PANTALLA COMPLETA
+        // 3. FULLSCREEN
         function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            }
+            if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } 
+            else { if (document.exitFullscreen) { document.exitFullscreen(); } }
         }
 
-        // 4. LÓGICA MODAL
+        // 4. MODAL
         function toggleInfo() {
-            var modal = document.getElementById('infoModal');
-            var btn = document.getElementById('btn-info');
-            
+            const modal = document.getElementById('infoModal');
+            const btn = document.getElementById('btn-info');
             if (modal.classList.contains('show')) {
                 modal.classList.remove('show');
-                setTimeout(function() { modal.style.display = 'none'; }, 300); 
-                btn.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300); 
+                if(btn) btn.classList.remove('active');
             } else {
                 modal.style.display = 'flex';
-                setTimeout(function() { modal.classList.add('show'); }, 10);
-                btn.classList.add('active');
+                setTimeout(() => modal.classList.add('show'), 10);
+                if(btn) btn.classList.add('active');
             }
         }
+        window.onclick = function(event) { if (event.target == document.getElementById('infoModal')) toggleInfo(); }
 
-        window.onclick = function(event) {
-            if (event.target == document.getElementById('infoModal')) toggleInfo();
-        }
+        // 5. TOOLTIPS
+        tippy('.tool-btn', { theme: 'stupor', animation: 'scale', placement: 'top', arrow: true });
     </script>
 
 </body>
